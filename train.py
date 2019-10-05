@@ -16,7 +16,7 @@ if __name__ == '__main__':
 	n_way = 5
 	k_shot = 5
 	k_query = 1 # query num per class
-	batchsz = 3
+	batchsz = 1
 	# Multi-GPU support
 	print('To run on single GPU, change device_ids=[0] and downsize batch size! \nmkdir ckpt if not exists!')
 	net = torch.nn.DataParallel(Compare(n_way, k_shot), device_ids=[0]).cuda()
@@ -37,10 +37,10 @@ if __name__ == '__main__':
 	best_accuracy = 0
 	for epoch in range(1000):
 
-		mini = MiniImagenet('../mini-imagenet/', mode='train', n_way=n_way, k_shot=k_shot, k_query=k_query,
+		mini = MiniImagenet('./mini-imagenet/', mode='train', n_way=n_way, k_shot=k_shot, k_query=k_query,
 		                    batchsz=10000, resize=224)
 		db = DataLoader(mini, batchsz, shuffle=True, num_workers=8, pin_memory=True)
-		mini_val = MiniImagenet('../mini-imagenet/', mode='val', n_way=n_way, k_shot=k_shot, k_query=k_query,
+		mini_val = MiniImagenet('./mini-imagenet/', mode='val', n_way=n_way, k_shot=k_shot, k_query=k_query,
 		                        batchsz=200, resize=224)
 		db_val = DataLoader(mini_val, batchsz, shuffle=True, num_workers=2, pin_memory=True)
 
@@ -72,7 +72,7 @@ if __name__ == '__main__':
 					net.eval()
 					pred, correct = net(support_x, support_y, query_x, query_y, False)
 					correct = correct.sum() # multi-gpu support
-					total_correct += correct.data[0]
+					total_correct += correct.item()
 					total_num += query_y.size(0) * query_y.size(1)
 
 					if not display_onebatch:
@@ -92,6 +92,6 @@ if __name__ == '__main__':
 				print('<<<<>>>>accuracy:', accuracy, 'best accuracy:', best_accuracy)
 
 			if step % 15 == 0 and step != 0:
-				tb.add_scalar('loss', loss.cpu().data[0])
+				tb.add_scalar('loss', loss.cpu().item())
 				print('%d-way %d-shot %d batch> epoch:%d step:%d, loss:%f' % (
-				n_way, k_shot, batchsz, epoch, step, loss.cpu().data[0]))
+				n_way, k_shot, batchsz, epoch, step, loss.cpu().item()))
